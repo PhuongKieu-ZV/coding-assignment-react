@@ -5,9 +5,15 @@ import UserService from '../../services/user.service';
 import { REACT_QUERY_KEY, Ticket, User } from '@acme/shared-models';
 import { useMemo, useState } from 'react';
 import { ActionGroupWrapper, ButtonCreate, TicketWrapper } from './styled';
-import { Button, Table, Tag, notification } from 'antd';
+import { Button, Select, Table, Tag, notification } from 'antd';
 import ModalCreateTicket from './modal-create-ticket';
 import ModalAssignTicket from './modal-assign-ticket';
+import { useNavigate } from 'react-router-dom';
+
+const enum Status {
+  COMPLETED = 'Completed',
+  INCOMPLETE = 'Incomplete',
+}
 
 export function Tickets() {
   const [open, setOpen] = useState<boolean>(false);
@@ -15,7 +21,12 @@ export function Tickets() {
   const [ticketSelected, setTicketSelected] = useState<Ticket | undefined>(
     undefined
   );
+  const [statusFilter, setStatusFilter] = useState<Status | undefined>(
+    undefined
+  );
+
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: dataTickets, isLoading } = useQuery<Ticket[], Error>(
     REACT_QUERY_KEY.TICKETS,
@@ -32,8 +43,14 @@ export function Tickets() {
   });
 
   const tickets = useMemo<Ticket[]>(() => {
-    return dataTickets || [];
-  }, [dataTickets]);
+    if (statusFilter) {
+      return (dataTickets || []).filter((t) =>
+        statusFilter === Status.COMPLETED ? t.completed : !t.completed
+      );
+    } else {
+      return dataTickets || [];
+    }
+  }, [dataTickets, statusFilter]);
 
   const users = useMemo<User[]>(() => {
     return dataUsers || [];
@@ -73,6 +90,14 @@ export function Tickets() {
       },
     }
   );
+
+  const handleNavigate = (record: Ticket) => {
+    if (record.assigneeId) {
+      navigate(`/ticket/${record.id}?userId=${record.assigneeId}`);
+    } else {
+      navigate(`/ticket/${record.id}`);
+    }
+  };
 
   const columns = [
     {
@@ -150,6 +175,7 @@ export function Tickets() {
             >
               {record.completed ? 'Mark Incomplete' : 'Mark Complete'}
             </Button>
+            <Button onClick={() => handleNavigate(record)}>View</Button>
           </ActionGroupWrapper>
         );
       },
@@ -160,9 +186,25 @@ export function Tickets() {
   const toggleModalAssign = () => setOpenAssign((prev) => !prev);
   const callback = () => setTicketSelected(undefined);
 
+  const handleChangeStatus = (value: Status) => {
+    setStatusFilter(value);
+  };
+
   return (
     <TicketWrapper>
-      <ButtonCreate onClick={toggleModal}>Create Ticket</ButtonCreate>
+      <div>
+        <ButtonCreate onClick={toggleModal}>Create Ticket</ButtonCreate>
+        <Select
+          allowClear
+          onChange={handleChangeStatus}
+          onClear={() => setStatusFilter(undefined)}
+          style={{ width: 150, marginLeft: 15 }}
+          placeholder="Filter by status"
+        >
+          <Select.Option value={Status.COMPLETED}>Completed</Select.Option>
+          <Select.Option value={Status.INCOMPLETE}>Incomplete</Select.Option>
+        </Select>
+      </div>
       <Table
         rowKey={(record) => record?.id}
         columns={columns as any}

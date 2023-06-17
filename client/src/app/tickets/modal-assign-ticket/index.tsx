@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { REACT_QUERY_KEY, Ticket, User } from '@acme/shared-models';
 import { Button, Form, Modal, Select, notification } from 'antd';
 import React from 'react';
@@ -16,24 +17,29 @@ const ModalAssignTicket: React.FC<IModalAssignTicket> = (props) => {
   const { isOpen, toggleModal, ticketSelected, users, callback } = props;
   const queryClient = useQueryClient();
 
-  //   const assignTicketMutation = useMutation(
-  //     (payload: { assigneeId: string }) => {
-  //       return TicketService.assignUserToTicket(
-  //         ticketSelected?.id,
-  //         payload.assigneeId
-  //       );
-  //     },
-  //     {
-  //       onSuccess: () => {
-  //         queryClient.invalidateQueries(REACT_QUERY_KEY.TICKETS);
-  //         notification.success({ message: 'Assign ticket successfully!' });
-  //         toggleModal();
-  //       },
-  //       onError: (error: any) => {
-  //         notification.error({ message: error?.response?.data?.message });
-  //       },
-  //     }
-  //   );
+  const assignTicketMutation = useMutation(
+    (payload: { assigneeId: number }) => {
+      return TicketService.assignUserToTicket(
+        ticketSelected?.id as number,
+        payload.assigneeId
+      );
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(REACT_QUERY_KEY.TICKETS);
+        notification.success({ message: 'Assign ticket successfully!' });
+        callback();
+        toggleModal();
+      },
+      onError: (error: any) => {
+        notification.error({ message: error?.response?.data?.message });
+      },
+    }
+  );
+
+  const handleSubmit = (values: { assigneeId: number }) => {
+    assignTicketMutation.mutate({ assigneeId: values.assigneeId });
+  };
 
   return (
     <Modal
@@ -46,7 +52,7 @@ const ModalAssignTicket: React.FC<IModalAssignTicket> = (props) => {
       <Form
         name="basic"
         initialValues={{ assigneeId: undefined }}
-        onFinish={(values) => console.log(values)}
+        onFinish={handleSubmit}
         autoComplete="off"
       >
         <Form.Item name="assigneeId" label="User" rules={[{ required: true }]}>
@@ -62,7 +68,11 @@ const ModalAssignTicket: React.FC<IModalAssignTicket> = (props) => {
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit">
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={assignTicketMutation.isLoading}
+          >
             Submit
           </Button>
         </Form.Item>

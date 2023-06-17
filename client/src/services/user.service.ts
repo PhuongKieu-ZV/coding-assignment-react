@@ -6,7 +6,7 @@ export default class UserService {
     return axiosClient.get('/users');
   }
 
-  static getUser(id: string): Promise<User> {
+  static getUser(id: number): Promise<User> {
     return axiosClient.get(`/users/${id}`);
   }
 }
