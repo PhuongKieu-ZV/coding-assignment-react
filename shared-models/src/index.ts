@@ -9,3 +9,10 @@ export type Ticket = {
   assigneeId: null | number;
   completed: boolean;
 };
+
+export const REACT_QUERY_KEY = {
+  TICKETS: 'tickets',
+  TICKET_DETAIL: 'ticket-detail',
+  USERS: 'users',
+  USER_DETAIL: 'user-detail',
+};
